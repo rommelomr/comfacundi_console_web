@@ -55,10 +55,14 @@
                                             label="Imagen del convenio"
                                             outlined
                                             prepend-icon="mdi-camera"
-                                            v-model="covenant.new_icon"
-                                            @change="previewImage(covenant.new_icon,'image_url')"
+                                            v-model="covenant.new_image"
+                                            @change="previewImage(covenant.new_image,'image_url')"
                                         ></v-file-input>
-
+                                        <center>
+                                            <v-btn text color="blue" @click="saveImage(covenant.id)">
+                                                Guardar imagen
+                                            </v-btn>
+                                        </center>
                                     </v-col>
                                     <v-col cols="6">
                                         <center>
@@ -290,13 +294,6 @@ export default {
         this.setBreadCrumb();
         this.$routeByRol(this.getUserFromStore());
 
-        this.axios.get('/app_covenants/agreements').then((r)=>{
-            console.log(r.data)
-        }).catch((e)=>{
-
-            console.log(e.response)
-
-        });
     },
     methods:{
         ...mapGetters([
@@ -359,7 +356,50 @@ export default {
             this.snackbar.is_displayed = bool == null ? true : bool;
 
         },
-        
+
+        setImageToBase64(file,prop){
+            
+            return new Promise((resolve,reject)=>{
+            
+                let reader = new FileReader();
+                reader.readAsDataURL(file[prop]);
+    
+                reader.onload = () => {
+                    console.log();
+                    this.covenant[prop] = reader.result;
+                    resolve();
+                };
+
+                reader.onerror = () => {
+                    reject();
+                };
+
+            });
+            
+        },
+
+        async saveImage(covenant_id){
+            //Env
+            covenant_id;
+            if(this.covenant.new_image != null){
+
+                await this.setImageToBase64(this.covenant,'new_image');
+                console.log(this.covenant.new_image);
+                this.axios.post('/save_covenant_image',{
+                    covenant_id:covenant_id,
+                    base64_image:this.covenant.new_image,
+    
+                }).then((r)=>{
+                    console.log(r.data);
+    
+                }).catch((e)=>{
+                    console.log(e.response);
+    
+                });
+    
+                console.log(this.covenant.new_image);
+            }
+        },
         saveIcon(covenant_id,icon){
 
             let status = 1;
@@ -519,26 +559,7 @@ export default {
 
 
         },
-        
-        savePriceasdfasdf(covenant_id,covenant_price){
-            covenant_id,covenant_price;
-            if(this.covenant.price!=''){
-
-                //Enviar request
-                let status = 1;
-
-                if(status == 1){
-                    this.setSnackbarText('Precio guardado correctamente','green');
-                }
-
-            }else{
-
-                this.setSnackbarText('Debe indicar un precio','red');
-
-            }
-            this.setSnackbarDisplay();
-
-        },
+       
         addAddress(e){
             if(e.key == 'Enter' || e.type == 'click'){
                 //enviar id del convenio al servidor
@@ -692,8 +713,7 @@ data
             //alert(covenant_id);
             this.axios.get('/covenants/'+id)
             .then((r)=>{
-
-                console.log(r);
+                console.log('Convenio cargado correctamente');
                 //console.log(r.data)
                 
                 this.covenant.id = r.data.data.id;
@@ -707,19 +727,13 @@ data
                 this.covenant.addresses=[
 
                 ];
-                /*
-                this.covenant.subcovenants=[
-                    {id:1,name:'covenant x'},
-                    {id:2,name:'covenant y'},
-                    {id:3,name:'covenant z'},
-                ];
-                */
+ 
                 this.covenant.subcovenants = r.data.data.children_covenants;
 
-                this.covenant.phones = this.data.data.phones;
+                //this.covenant.phones = this.data.data.phones;
             })
             .catch((e)=>{
-                console.log(e.response);
+                console.log(e);
             })
             .finally(()=>{
                 window.scroll(0,0);

@@ -71,7 +71,7 @@ export default new Vuex.Store({
             });
           }
         }).catch((e)=>{
-          console.log(e.response);
+          console.log(e);
           console.log('Los convenios no han sido cargados de la base de datos');
         }).finally(()=>{
           

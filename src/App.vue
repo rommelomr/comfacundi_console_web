@@ -60,11 +60,12 @@
             <v-list-item
               v-for="(account_item, j) in account_items"
               :key="'account'+j"
+              @click="MenuItemClick(account_item.route)"
             >
-              <v-list-item-title class="dark-blue" @click="MenuItemClick(account_item.route)">{{account_item.name}}</v-list-item-title>
+              <v-list-item-title class="dark-blue" >{{account_item.name}}</v-list-item-title>
             </v-list-item>
-            <v-list-item>
-              <v-list-item-title class="dark-blue" @click="logout">Cerrar sesión</v-list-item-title>
+            <v-list-item @click="logout">
+              <v-list-item-title class="dark-blue" >Cerrar sesión</v-list-item-title>
             </v-list-item>
             
           <v-divider></v-divider>
@@ -83,11 +84,12 @@
             <v-list-item
               v-for="(convenant, i) in covenants"
               :key="'covenants'+i"
+              @click="MenuItemClick(convenant.route)"
             >
-              <v-list-item-title class="dark-blue" @click="MenuItemClick(convenant.route)">{{convenant.name}}</v-list-item-title>
+              <v-list-item-title class="dark-blue" >{{convenant.name}}</v-list-item-title>
             </v-list-item>
-            <v-list-item>
-              <v-list-item-title class="dark-blue" @click="MenuItemClick('/convenios/inhabilitados')">Convenios inhabilitados</v-list-item-title>
+            <v-list-item @click="MenuItemClick('/convenios/inhabilitados')">
+              <v-list-item-title class="dark-blue">Convenios inhabilitados</v-list-item-title>
             </v-list-item>
 
             <v-divider></v-divider>
@@ -105,8 +107,8 @@
             </v-list-item>
         
             <v-divider></v-divider>
-              <v-list-item>
-                <v-list-item-title class="dark-blue" @click="MenuItemClick('/usuarios')">{{"Gestionar Usuarios"}}</v-list-item-title>
+              <v-list-item @click="MenuItemClick('/usuarios')">
+                <v-list-item-title class="dark-blue" >{{"Gestionar Usuarios"}}</v-list-item-title>
               </v-list-item>
           </div>
           
@@ -122,6 +124,7 @@
   </v-app>
 </template>
 <style>
+
   .dark-blue{
     color:#1a4e78 !important;
   }
@@ -169,17 +172,7 @@ export default {
     
     
     this.stored_user = this.getUserFromStore();
-    this.axios.get('/app_covenants/agreements')
-    .then((r)=>{
-      console.log(r.data)
-    })
-    .catch((e)=>{
-      console.log(e.response)
-    });
-    /*
-    display or redirect the user depending on the view visibility and
-    the user rol
-    */
+    
 
   },
   methods:{
@@ -205,7 +198,7 @@ export default {
       }
     },
     logout(){
-
+      console.log();
       this.CLEAR_USER_DATA();
       this.CLEAR_COVENANTS();
 
@@ -221,7 +214,7 @@ export default {
       }).catch((e)=>{
         console.log(e.response)
       }).finally(()=>{
-        window.location = '/'
+        this.$router.push('/login');
       });
     }
   }
