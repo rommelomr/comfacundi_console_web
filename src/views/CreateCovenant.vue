@@ -9,7 +9,7 @@
                             <v-card-title class="justify-center">Imagen del convenio</v-card-title>
                             <v-divider></v-divider>
                             <v-img
-                                src="@/assets/upload.png"
+                                :src="previewImage"
                                 width="300"
                                 class="mx-auto mt-2"
                             >
@@ -30,7 +30,7 @@
                             <v-card-text>
 
                                 <v-row>
-                                    <v-col cols="12" md="6">
+                                    <v-col cols="12">
                                         <v-text-field
                                             outlined
                                             label="Nombre del convenio *"
@@ -38,8 +38,22 @@
                                         ></v-text-field>
                                         <v-text-field
                                             outlined
+                                            label="Título * "
+                                            v-model="covenant.title"
+                                        ></v-text-field>
+                                        
+                                        <v-text-field
+                                            outlined
                                             label="Precio"
                                             v-model="covenant.price"
+                                        >
+                                        </v-text-field>
+                                        
+                                        <v-text-field
+                                            outlined
+                                            label="Tipo de beneficiario"
+                                            v-model="covenant.type_of_beneficiarie"
+                                            hint="Por ejemplo: 'Válido para 2 personas'"
                                         >
                                         </v-text-field>
                                         
@@ -55,7 +69,7 @@
                                         ></v-textarea>
 
                                     </v-col>
-                                    <v-col>
+                                    <!--v-col>
                                         <v-card class="mb-1">
                                             <v-card-text class="pb-0"><b>Direcciones</b></v-card-text>
                                             <v-card-text class="pt-0">
@@ -149,7 +163,7 @@
                                                 <v-btn v-if="!link_input_is_displayed" @click="link_input_is_displayed = !link_input_is_displayed" text x-small color="green">Agregar enlace</v-btn>
                                             </v-card-text>
                                         </v-card>
-                                    </v-col>                                    
+                                    </v-col-->                                    
                                 </v-row>
 
                             </v-card-text>
@@ -208,16 +222,24 @@ export default {
 
         covenant:{
             parent_id:null,
-            name:null,
+            //name:null,
+            name:'Nombre',
+            title:'Titulo',
+            
             icon:null,
-            description:'',
+
+            //description:'',
+            description:'Descripción',
+
+            //image:null,
             image:null,
-            price:'',
-                
-            addresses:[
-            ],
-            links:[
-            ]
+
+            //price:'',
+            price:'Desde $400',
+
+            //type_of_beneficiarie:null,
+            type_of_beneficiarie:'Valido para dos personas',
+
         },
 
         new_link:{
@@ -244,6 +266,11 @@ export default {
     mounted(){
         this.setParentCovenant();
         this.$routeByRol(this.getUserFromStore());
+    },
+    computed:{
+        previewImage(){
+            return this.files.image == null ? 'https://cdn.pixabay.com/photo/2016/01/03/00/43/upload-1118929_960_720.png' : URL.createObjectURL(this.files.image)
+        }
     },
     methods:{
 
@@ -428,14 +455,38 @@ export default {
 
         //requests
         setParentCovenant(){
-            let parent_covenant = {
-                id:99,
-                name:'[Nombre del convenio padre]'
-            };
+            this.axios.get('/covenants/'+this.$route.params.id)
+            .then((r)=>{
+                
+                this.parent_covenant = r.data.data.name;
+                this.covenant.parent_id = r.data.data.id;
 
-            this.parent_covenant = parent_covenant.name;
-            this.covenant.parent_id = parent_covenant.id;
+            }).catch((e)=>{
+                console.log(e.response);
+            });
 
+        },
+
+        setImageToFileReader(file,prop){
+            
+            return new Promise((resolve,reject)=>{
+            
+                let reader = new FileReader();
+
+                reader.readAsDataURL(file[prop]);
+    
+                reader.onload = () => {
+                    console.log();
+                    this.covenant[prop] = reader.result;
+                    resolve();
+                };
+
+                reader.onerror = () => {
+                    reject();
+                };
+
+            });
+            
         },
         validateInputs(){
             
@@ -443,8 +494,6 @@ export default {
             this.covenant.parent_id != null
         },
         async saveNewCovenant(){
-
-            /**/
 
             if(this.validateInputs()){
                 
@@ -458,40 +507,24 @@ export default {
                     await this.setImageToBase64(this.files,'icon');
 
                 }
-    
-                let status = 1;
-                let message;
+                console.log(this.covenant);
+                this.axios.post('/save_new_covenant',{
 
-                if(status === 1){
-                    
-                    message = 'Convenio guardado correctamente';
-                    this.covenant={
-                        parent_id:null,
-                        name:null,
-                        icon:null,
-                        description:'',
-                        image:null,
-                        price:'',
-                            
-                        addresses:[
-                        ],
-                        links:[
-                        ]
+                    parent_id:this.covenant.parent_id,
+                    name: this.covenant.name,
+                    title: this.covenant.title,
+                    description: this.covenant.description,
+                    price: this.covenant.price,
+                    type_of_beneficiarie: this.covenant.type_of_beneficiarie,
+                    image: this.files.image,
+                    icon: this.files.icon
 
-                    };
-                    this.files = {
-                        icon:null,
-                        image:null
-                    }
-    
-                }else{
-                    
-                    message = '[Traer del servidor el error del convenio]';   
-                    
-                }
+                }).then((r)=>{
+                    console.log(r.data);
+                }).catch((e)=>{
+                    console.log(e.response);
 
-                this.snackbar.text = message;
-                this.snackbar.is_displayed = true;
+                });
 
             }else{
 
@@ -509,7 +542,7 @@ export default {
     
                 reader.onload = () => {
 
-                    this.covenant[prop] = reader.result.split(';').pop();
+                    this.files[prop] = reader.result;
                     resolve();
                 };
 

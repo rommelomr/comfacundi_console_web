@@ -750,9 +750,15 @@ export default {
                 this.covenant.enabled = r.data.data.status == 'e';
                 this.covenant.name = r.data.data.name;
                 
-                this.covenant.icon_url = r.data.data.icon == '' ? 'https://cdn.pixabay.com/photo/2016/01/03/00/43/upload-1118929_960_720.png' : Helper.SERVER_URL+r.data.data.icon, //ur;
+                this.covenant.icon_url = r.data.data.icon == '' ? 'https://cdn.pixabay.com/photo/2016/01/03/00/43/upload-1118929_960_720.png' : Helper.SERVER_URL+r.data.data.icon; //ur;
                 
-                this.covenant.image_url = r.data.data.information == null ? 'https://cdn.pixabay.com/photo/2016/01/03/00/43/upload-1118929_960_720.png' : Helper.SERVER_URL+r.data.data.information.image, //ur;
+                //this.covenant.image_url = r.data.data.information == null ? 'https://cdn.pixabay.com/photo/2016/01/03/00/43/upload-1118929_960_720.png' : Helper.SERVER_URL+r.data.data.information.image, //ur;
+
+                if((r.data.data.information != null) && (r.data.data.information.image != '')){
+                    this.covenant.image_url = Helper.SERVER_URL+r.data.data.information.image;
+                }else{
+                    this.covenant.image_url = 'https://cdn.pixabay.com/photo/2016/01/03/00/43/upload-1118929_960_720.png';
+                }
  //               this.covenant.image_url = 'https://cdn.pixabay.com/photo/2016/01/03/00/43/upload-1118929_960_720.png';
                 this.covenant.price = r.data.data.information == null ? '' : r.data.data.information.price;
                 this.covenant.description = r.data.data.information == null ? '' : r.data.data.information.description;
