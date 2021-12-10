@@ -97,11 +97,10 @@
                             :headers="headers"
                             :items="items"
                             :items-per-page="items_per_page"
-                            @click:row="editUser"
+                            
                             :server-items-length="50"
                             class="elevation-1"
-                            @update:page="pageUpdated"
-                            @update:items-per-page="itemsPerPageUpdated"
+                            
                         >
                             
                         </v-data-table>
@@ -259,16 +258,7 @@ export default {
             {text:'Administrador', value:'a'},
             {text:'Operador', value:'o'},
         ],
-        items:[
-            {
-                full_name:'Rommel Omar Montoya',
-                username:'rommel_omr',
-                document_type:'CC',
-                document_number:'123123123',
-                status:'1',
-            },
-            
-        ],
+        items:[],
         items_per_page:5,
 
         snackbar:{
@@ -279,6 +269,7 @@ export default {
     }),
     mounted(){
         this.$routeByRol(this.getUserFromStore());
+        this.setUsers();
     },
     computed:{
         userStatus(){
@@ -287,6 +278,15 @@ export default {
         
     },
     methods:{
+        setUsers(){
+            this.axios.get('/users')
+            .then((r)=>{
+                console.log(r);
+                this.items = r.data
+            }).catch((e)=>{
+                console.log(e.response);
+            });
+        },
         ...mapGetters([
             'getUserFromStore'
         ]),
