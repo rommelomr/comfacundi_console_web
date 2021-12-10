@@ -4,7 +4,7 @@
             <li v-for="(link,i) in links"
                 :key="'links_'+i"
             >
-                {{link.url}} <v-btn text color="red" x-small @click="deleteLink(i)"><v-icon small>mdi-close-box</v-icon></v-btn>
+                {{link.link}} <v-btn text color="red" x-small @click="deleteLink(link.id,i)"><v-icon small>mdi-close-box</v-icon></v-btn>
                 <br>Botón: {{link.button}}
             </li>
         </ul>
@@ -54,16 +54,26 @@ export default {
         addLink(e){
             if(e.key == "Enter" || e.type == 'click'){
                 if(this.validateUrl(this.link.url)==true && this.required(this.link.button) == true){
+                    
+                    let url = this.link.url;
+                    this.$emit('add:link',{
+                        url:url,
+                        button:this.link.button
+                    });
 
-                    this.$emit('add:link',this.link);
                     this.link_form_is_displayed = false;
+                    this.link.url = '';
+                    this.link.button = '';
                 }
 
             }
         },
-        deleteLink(link_index){
+        deleteLink(link_id,link_index){
 
-            this.$emit('delete:link',link_index);
+            this.$emit('delete:link',{
+                link_id:link_id,
+                link_index:link_index,
+            });
 
 
         },

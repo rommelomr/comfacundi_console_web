@@ -1,23 +1,26 @@
 <template>
     <div>
         <ul>
+
             <li v-for="(phone,i) in address.phones"
                 :key="'phones_'+i">
-                {{phone}} <v-btn text x-small color="red" @click="deletePhone(address.index,i)"><v-icon small>mdi-close-box</v-icon> </v-btn>
+                {{phone.phone_number}} <v-btn text x-small color="red" @click="deletePhone(address.index,i)"><v-icon small>mdi-close-box</v-icon> </v-btn>
             </li>
+
             <v-text-field
                 v-if="phone_input_is_displayed"
                 outlined 
                 label="Nuevo teléfono"
                 v-model="new_phone"
-                :rules="[validatePhoneFormat]"
-                @keyup="savePhone"    
+                :rules="[validatePhoneFormat]"   
             ></v-text-field>
+
             <v-btn
                 v-if="phone_input_is_displayed"
                 @click="savePhone"
                 text x-small color="green">Guardar
             </v-btn>
+
             <v-btn
                 v-if="phone_input_is_displayed"
                 @click="phone_input_is_displayed = false"
@@ -46,10 +49,12 @@
                 
         }),
         props:['address'],
-        
+        mounted(){
+            console.log(this.address)
+        },
         methods:{
             validatePhoneFormat(number){
-                console.log(number)
+                
                 let patt = '^[0-9 -]+$';
                 
                 return number.match(patt) ? true : 'Numero de telefono inválido. Formato: 123 - 456 7890';
@@ -66,20 +71,26 @@
                 })
             },
             savePhone(e){
+
                 if(e.key == 'Enter' || e.type == 'click'){
 
                     if(this.validatePhoneFormat(this.new_phone)==true){
-                        
+                        let phone = this.new_phone;
                         this.$emit('add:phone',{
-                            index:this.address.index,
-                            phone:this.new_phone
+
+                            address_index: this.address.index,
+                            address_id: this.address.id,
+                            phone: phone
+
                         });
+
                         this.displayPhoneInput(false)
                         this.new_phone = null;
 
                     }
 
                 }
+
             },
         }
     }

@@ -163,9 +163,9 @@
                                     <li
                                         v-for="(address,i) in covenant.addresses"
                                         :key="'addresses_'+i"
-                                    >{{address.name}} <v-btn text color="red" x-small @click="deleteAddress(i)"><v-icon small>mdi-close-box</v-icon></v-btn>
+                                    >{{address.name}} <v-btn text color="red" x-small @click="deleteAddress(address.id,i)"><v-icon small>mdi-close-box</v-icon></v-btn>
                                     <addPhones
-                                        :address="{'phones':address.phones,'index':i}"
+                                        :address="{'phones':address.phones,'index':i,'id':address.id}"
                                         @add:phone="addPhone"
                                         @delete:phone="deletePhone"
 
@@ -177,7 +177,6 @@
                                     <v-text-field
                                         outlined
                                         label="Nueva Dirección"
-                                        @keyup="addAddress"
                                         v-model="new_address"
                                         :rules="[required]"
                                     ></v-text-field>
@@ -213,23 +212,11 @@
                     
                 </v-row>
             </v-card-text>
-            <v-snackbar
-                :color="snackbar.text_color"
-                v-model="snackbar.is_displayed"
-                :dark="snackbar.is_dark"
-                text
+            <snackbar
+                v-if="snackbar.is_displayed"
+                :data="snackbar"
             >
-                {{ snackbar.text }}
-                <v-btn
-                    :color="snackbar.text_color"
-                    
-                    text
-                    @click="snackbar.is_displayed = false"
-                >
-                    Cerrar
-                </v-btn>
-            
-            </v-snackbar>
+            </snackbar>
     </v-container>
 </template>
 
@@ -238,6 +225,8 @@
 import AddPhones from '../components/AddPhones.vue';
 import AddLinks from '../components/AddLinks.vue';
 import { mapGetters } from 'vuex';
+import Helper from '../utils/Helper.js';
+import SnackBar from '../components/SnackBar.vue';
 
 export default {
 
@@ -245,6 +234,7 @@ export default {
     components:{
         'AddPhones':AddPhones,
         'AddLinks':AddLinks,
+        'snackbar':SnackBar
     },
     data:()=>({
         loading:false,
@@ -254,11 +244,8 @@ export default {
 
         snackbar:{
             is_displayed:false,
-            is_dark:false,
-            background:'',
             text_color:'',
-            text:'',
-            dark_backgrounds:['yellow','white']
+            text:''
         },
 
         tree_view_items:[],
@@ -275,7 +262,7 @@ export default {
             links:[],
             addresses:[],
             subcovenants:[],
-            phones:[]
+            
         },
         tree_view_items_opened:[],
         breadcrumbs:[],
@@ -299,65 +286,152 @@ export default {
         ...mapGetters([
             'getUserFromStore'
         ]),
+        addLink(props){
+
+            this.axios.post('/save_link',{
+                covenant_id:this.covenant.id,
+                url: props.url,
+                button:props.button,
+
+            }).then((r)=>{
+                
+                console.log(r.data);
+                this.snackbar.text = "Enlace agregado correctamente";
+                this.snackbar.text_color = "green";
+                this.covenant.links.push({
+                    id:r.data.id,
+                    link:props.url,
+                    button:props.button
+                }); 
+
+            }).catch((e)=>{
+
+                this.snackbar.text = "Ha ocurrido un error inseperado";
+                this.snackbar.text_color = "red";
+                console.log(e.response);
+                    
+
+            }).finally(()=>{
+                this.snackbar.is_displayed = true;
+            });
+            
+
+        },
+        deleteLink(props){
+
+            this.axios.post('/delete_link',{
+                link_id:props.link_id
+            }).then(()=>{
+
+                this.snackbar.text = "Enlace eliminado correctamente";
+                this.snackbar.text_color = "green";
+                this.covenant.links.splice(props.link_index,1);
+
+            }).catch((e)=>{
+                this.snackbar.text = "Ha ocurrido un error inesperado";
+                this.snackbar.text_color = "red";
+
+                console.log(e.response);
+
+            }).finally(()=>{
+
+                this.snackbar.is_displayed = true;
+
+            });
+
+        },
+        addAddress(){
+            this.axios.post('/save_address',{
+                covenant_id:this.covenant.id,
+                address: this.new_address,
+
+            }).then((r)=>{
+                console.log(r.data);
+                if(r.data){
+                    
+                    this.snackbar.text = "Dirección agregada correctamente";
+                    this.snackbar.text_color = "green";
+
+                    this.covenant.addresses.push({
+                        id:r.data.address_id,
+                        name:this.new_address,
+                        phones:[]
+                    });
+                    this.address_input_is_displayed = false;
+                    this.new_address = '';
+
+                }
+
+            }).catch((e)=>{
+                this.snackbar.text = "Ha ocurrido un error inseperado."
+                this.snackbar.text_color = "red";
+                console.log(e.response);
+
+            }).finally(()=>{
+
+                this.snackbar.is_displayed = true;
+
+            });
+            
+        },
+        
         deletePhone(e){
             
             //enviar id del telefono al servidor y borrar el telefono
-            let status = 1;
-            if(status == 1){
-                this.setSnackbarText('Teléfono eliminado satisfactoriamente','green')
-                this.covenant.addresses[e.address_index].phones.splice(e.phone_index,1);
-            }else{
-                this.setSnackbarText('[Mostrar error del servidor]','red')
-            }
-            this.setSnackbarDisplay();
+            let phone_id = this.covenant.addresses[e.address_index].phones[e.phone_index].id;
 
+            this.axios.post('/delete_phone',{
+                phone_id: phone_id
+            }).then((r)=>{
+                r
+                this.covenant.addresses[e.address_index].phones.splice(e.phone_index,1);
+                this.snackbar.text = "Teléfono borrado correctamene";
+                this.snackbar.text_color = "green";
+            }).catch((e)=>{
+                
+                console.log(e.response);
+                this.snackbar.text = "Ha ocurrido un error inesperado";
+                this.snackbar.text_color = "red";
+
+
+            }).finally(()=>{
+                this.snackbar.is_displayed = true;
+            });
+            
         },
         addPhone(e){
             
             //Enviar el telefono telefono y el id del convenio al servidor
-            let status = 1;
+            console.log(e);
+            this.axios.post('/add_phone',{
 
-            if(status == 1){
-
-                this.covenant.addresses[e.index].phones.push(e.phone);
-                //Al atributo id, colocarle el id que el servidor manda para en caso de que se tenga
-                //que borrar sin haber recargado la página
-                this.setSnackbarText('Dirección guardada satisfactoriamente','green');
-
-            }else{
-
-                this.setSnackbarText('[Mostrar error del servidor]','red');
-
-            }
-
-            this.setSnackbarDisplay();
-
-            
-        },
-        setSnackbarText(text,text_color){
-
-            this.snackbar.text = text;
-
-            if(text_color == null){
+                address_id:e.address_id,
+                phone:e.phone
                 
-                this.snackbar.text_color = 'black';
+            }).then((r)=>{
+                console.log(r);
+                
+                this.snackbar.text = "Telefono agregado correctamente";
+                this.snackbar.text_color = "green";
+                
+                this.covenant.addresses[e.address_index].phones.push({id:r.data.phone_id,phone_number:e.phone});
 
-            }else{
 
-                this.snackbar.text_color = text_color;
-            }
+            }).catch((e)=>{
+                
+                this.snackbar.text = "Ocurrió un error inesperado";
+                this.snackbar.text_color = "red";
 
-            this.snackbar.is_dark = this.snackbar.dark_backgrounds.includes(text_color);
+                console.log(e.response)
+            }).finally(()=>{
 
-        },
+                this.snackbar.is_displayed = true;
 
-        setSnackbarDisplay(bool){
+            });
             
-            this.snackbar.is_displayed = bool == null ? true : bool;
-
         },
 
-        setImageToBase64(file,prop){
+        setImageToFileReader(file,prop){
             
             return new Promise((resolve,reject)=>{
             
@@ -383,51 +457,57 @@ export default {
             covenant_id;
             if(this.covenant.new_image != null){
 
-                await this.setImageToBase64(this.covenant,'new_image');
-                console.log(this.covenant.new_image);
+                await this.setImageToFileReader(this.covenant,'new_image');
+                
                 this.axios.post('/save_covenant_image',{
                     covenant_id:covenant_id,
                     base64_image:this.covenant.new_image,
     
                 }).then((r)=>{
-                    console.log(r.data);
+                    if(r.data == true){
+                        this.snackbar.text = "Imagen guardada correctamente";
+                        this.snackbar.text_color = "green";
+                    }
     
                 }).catch((e)=>{
                     console.log(e.response);
+                    this.snackbar.text = "La imagen no pudo ser guardada";
+                    this.snackbar.text_color = "red";
+                    
     
+                }).finally(()=>{
+                    this.snackbar.is_displayed = true;
                 });
-    
-                console.log(this.covenant.new_image);
+
             }
         },
-        saveIcon(covenant_id,icon){
+        async saveIcon(covenant_id){
 
-            let status = 1;
-            covenant_id;icon;
-            
 
-            if(this.covenant.new_icon!=null){
+            if(this.covenant.new_icon != null){
 
-                //Aquí se envía el icono al servidor y retorna un objeto con el status    
+                await this.setImageToFileReader(this.covenant,'new_icon');
+                
+                this.axios.post('/save_covenant_icon',{
+                    covenant_id:covenant_id,
+                    fileReaderFormat:this.covenant.new_icon
+                }).then((r)=>{
+                    if(r.data == true){
 
-                if(status == 1){
-
-                    this.setSnackbarText('icono modificado correctamente','green');
-
-                }else{
-
-                    this.setSnackbarText('Mostrar error de server','red');
+                        this.snackbar.text = "Icono guardado correctamente"
+                        this.snackbar.text_color = "green";
+                    }
                     
-                }
+                }).catch((e)=>{
+                    console.log(e.response);
+                    this.snackbar.text_color = 'red';
+                    this.snackbar.text = 'El ícono no pudo ser guardado';
 
-                //colocar la imagen en la previsualización
-            }else{
-
-                this.setSnackbarText('ERROR: No se ha seleccionado ningun ícono','red');
+                }).finally(()=>{
+                    this.snackbar.is_displayed = true;
+                });
 
             }
-
-            this.setSnackbarDisplay();
         },
         previewImage(new_image,prop){
             
@@ -439,17 +519,23 @@ export default {
             alert('updateImage '+covenant_id);
         },
 
-        deleteAddress(address_id){
+        deleteAddress(address_id,address_index){
             //request
             //Enviar dirección e id de la dirección
-            let status = 1;
-            if(status == 1){
-                this.setSnackbarText('Direccion eliminada satisfactoriamente','green');
-            }else{
-                this.setSnackbarText('[mostrar error del servidor]','red');
-            }
-            this.setSnackbarDisplay();
-            this.covenant.addresses.splice(address_id,1)
+            
+
+            this.axios.post('/delete_address',{
+                address_id:address_id
+            }).then(()=>{
+                this.snackbar.text = "Dirección borrada correctamente";
+                this.snackbar.text_color = "green";
+                this.covenant.addresses.splice(address_index,1);
+            }).catch((e)=>{
+                this.snackbar.text = "Ha ocurrido un error inesperado";
+                this.snackbar.text_color = "red";
+                console.log(e.response);
+            });
+
         },
 
         disableCovenant(covenant_id){
@@ -459,7 +545,8 @@ export default {
             }).then((r)=>{
 
                 console.log(r.data);
-                this.setSnackbarText('Convenio inhabilitado','green');
+                this.snackbar.text = 'Convenio inhabilitado';
+                this.snackbar.text_color = "green";
                 this.covenant.enabled = false;
                 
             }).catch((e)=>{
@@ -468,7 +555,7 @@ export default {
 
             }).finally(()=>{
 
-                this.setSnackbarDisplay();
+                this.snackbar.is_displayed = true;
 
             });
         },
@@ -480,7 +567,8 @@ export default {
             }).then((r)=>{
 
                 console.log(r.data);
-                this.setSnackbarText('Convenio habilitado nuevamente','green');
+                this.snackbar.text = 'Convenio habilitado nuevamente';
+                this.snackbar.text_color = "green";
                 this.covenant.enabled = true;
                 
             }).catch((e)=>{
@@ -489,7 +577,7 @@ export default {
 
             }).finally(()=>{
 
-                this.setSnackbarDisplay();
+                this.snackbar.is_displayed = true;
 
             });
         },
@@ -503,123 +591,66 @@ export default {
                     description:this.covenant.description,
 
                 }).then((r)=>{
-                    console.log(r.data);
+                    if(r.data.status == 200){
+
+                        this.snackbar.text = r.data.message;
+                        this.snackbar.text_color = "green";
+                    }
+                    
                 }).catch((e)=>{
                     console.log(e.response);
 
+                }).finally(()=>{
+
+                    this.snackbar.is_displayed = true;
                 });
-                let status = 1;
-
-                if(status == 1){
-                    
-                    this.setSnackbarText('Descripción guardada correctamente','green')
-                    
-                }else{
-                    this.setSnackbarText('[Colocar error del servidor]','red');
-                }
-
+                
             }else{
-
-                this.setSnackbarText('La descripción no puede estar vacía','red')
+                
+                this.snackbar.text = 'La descripción no puede estar vacía';
+                this.snackbar.text_color = "yellow";
+                this.snackbar.is_displayed = true;
             }
-            this.setSnackbarDisplay()
 
 
         },
         
         savePrice(covenant_id){
 
-            if(this.covenant.description != ''){
+            if(this.covenant.price != ''){
 
                 this.axios.post('/add_price_to_covenant',{
                     id:covenant_id,
                     price:this.covenant.price,
 
                 }).then((r)=>{
-                    console.log(r.data);
+                    
+                    if(r.data.status == 200){
+                        this.snackbar.text_color = 'green';
+                        this.snackbar.text = r.data.message;
+                    }
                 }).catch((e)=>{
+
                     console.log(e.response);
 
+                    this.snackbar.text_color = 'red';
+                    this.snackbar.text = "Ocurrió un error al guardar el precio"
+
+                }).finally(()=>{
+
+                    this.snackbar.is_displayed = true;
                 });
-                let status = 1;
 
-                if(status == 1){
-                    
-                    this.setSnackbarText('Descripción guardada correctamente','green')
-                    
-                }else{
-                    this.setSnackbarText('[Colocar error del servidor]','red');
-                }
 
             }else{
-
-                this.setSnackbarText('La descripción no puede estar vacía','red')
-            }
-            this.setSnackbarDisplay()
-
-
-        },
-       
-        addAddress(e){
-            if(e.key == 'Enter' || e.type == 'click'){
-                //enviar id del convenio al servidor
                 
-                let status = 1;
-                if(status == 1){
-                    
-                    this.covenant.addresses.push({
-                        name:this.new_address,
-                        phones:[]
-                    });
-
-                    this.new_address = null;
-                    this.address_input_is_displayed = false;
-                    this.setSnackbarText('Dirección agregada satisfactoriamente','green');
-
-                }else{
-                    
-                    this.setSnackbarText('[Mostrar error de servidor]','red');
-
-
-                }
-                this.setSnackbarDisplay();
-            }
-        },
-        addLink(data){
-            //enviar id del convenio al servidor para agregar el link
-
-            let status = 1;
-            if(status == 1){
-data
-                this.setSnackbarText('Enlace agregado satisfactoriamente','green');
-
-            }else{
-
-                this.setSnackbarText('[Mostrar error del servidor]','red');
-
+                this.snackbar.text = 'La descripción no puede estar vacía';
+                this.snackbar.text_color = "yellow";
+                this.snackbar.is_displayed = true;
             }
 
-            this.setSnackbarDisplay();
 
-        },
 
-        deleteLink(link_index){
-            //Enviar id del link al servidor para borrarlo
-
-            let status = 1;
-            if(status == 1){
-
-                this.covenant.links.splice(link_index,1);
-                this.setSnackbarText('Enlace eliminado satisfactoriamente','green');
-
-            }else{
-
-                this.setSnackbarText('[MOSTAR ERROR DEL SERVIDOR]','red');
-
-            }
-
-            this.setSnackbarDisplay();
-            
         },
 
         setBreadCrumb(){
@@ -708,35 +739,36 @@ data
         },
 
         setCovenant(id){
-
             //let covenant_id = this.$route.query.id;
             //alert(covenant_id);
             this.axios.get('/covenants/'+id)
             .then((r)=>{
+                console.log(r.data);
                 console.log('Convenio cargado correctamente');
-                //console.log(r.data)
                 
                 this.covenant.id = r.data.data.id;
                 this.covenant.enabled = r.data.data.status == 'e';
                 this.covenant.name = r.data.data.name;
-                this.covenant.icon_url = 'https://cdn.pixabay.com/photo/2016/01/03/00/43/upload-1118929_960_720.png', //ur;
-                this.covenant.image_url = 'https://cdn.pixabay.com/photo/2016/01/03/00/43/upload-1118929_960_720.png';
+                
+                this.covenant.icon_url = r.data.data.icon == '' ? 'https://cdn.pixabay.com/photo/2016/01/03/00/43/upload-1118929_960_720.png' : Helper.SERVER_URL+r.data.data.icon, //ur;
+                
+                this.covenant.image_url = r.data.data.information == null ? 'https://cdn.pixabay.com/photo/2016/01/03/00/43/upload-1118929_960_720.png' : Helper.SERVER_URL+r.data.data.information.image, //ur;
+ //               this.covenant.image_url = 'https://cdn.pixabay.com/photo/2016/01/03/00/43/upload-1118929_960_720.png';
                 this.covenant.price = r.data.data.information == null ? '' : r.data.data.information.price;
                 this.covenant.description = r.data.data.information == null ? '' : r.data.data.information.description;
-                //this.covenant.links = r.data.data.links;
-                this.covenant.addresses=[
-
-                ];
+                this.covenant.links = r.data.data.links;
+                this.covenant.addresses=r.data.data.addresses;
  
                 this.covenant.subcovenants = r.data.data.children_covenants;
 
                 //this.covenant.phones = this.data.data.phones;
             })
             .catch((e)=>{
-                console.log(e);
+                console.log(e.response);
             })
             .finally(()=>{
                 window.scroll(0,0);
+                this.$router.push('/convenios/'+id);
             });
 
         },
