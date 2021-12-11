@@ -97,7 +97,7 @@
                             :headers="headers"
                             :items="items"
                             :items-per-page="items_per_page"
-                            
+                            @click:row="editUser"
                             :server-items-length="50"
                             class="elevation-1"
                             
@@ -142,15 +142,8 @@
                                 </v-col>
                             </v-row>
                             <v-row>
-                                <v-col cols="4">
-                                    <v-select
-                                        label="Tipo de documento"
-                                        :items="document_types"
-                                        outlined
-                                        v-model="edit_user.document_type"
-                                    ></v-select>
-                                </v-col>
-                                <v-col cols="8">
+                                
+                                <v-col cols="12">
                                     <v-text-field
                                         label="Número de documento"
                                         v-model="edit_user.document_number"
@@ -164,6 +157,9 @@
                                     <v-text-field
                                         label="Contraseña"
                                         v-model="edit_user.password"
+                                        :append-icon="show ? 'mdi-eye' : 'mdi-eye-off'"
+                                        :type="show ? 'text' : 'password'"
+                                        @click:append="show = !show"
                                         outlined
                                     ></v-text-field>
                                 </v-col>
@@ -202,6 +198,8 @@ export default {
         'snackbar':SnackBar
     },
     data:()=>({
+        show :false,
+        selected_item:null,
         rules:{
             name:[
                 v => !!v || 'Debe ingresar un nombre.',
@@ -246,10 +244,10 @@ export default {
             document_number:'123456789',
         },
         edit_user:{
+            id:'',
             full_name:'',
             username:'',
             password:'',
-            document_type:'',
             document_number:'',
             status:'',
         },
@@ -281,8 +279,12 @@ export default {
         setUsers(){
             this.axios.get('/users')
             .then((r)=>{
-                console.log(r);
-                this.items = r.data
+                
+                for(let i in r.data){
+                    r.data[i].status = r.data[i].status == 1 ? 'activo' : 'inactivo'
+                }
+                this.items = r.data;
+                
             }).catch((e)=>{
                 console.log(e.response);
             });
@@ -293,7 +295,7 @@ export default {
         closeDialog(){
 
             this.dialog = false;
-            this.cleanEditForm();
+            //this.cleanEditForm();
             
         },
         cleanEditForm(){
@@ -319,13 +321,15 @@ export default {
                     this.$refs.form.reset();
                     this.snackbar.text = 'Usuario agregado correctamente';
                     this.snackbar.text_color = 'green';
-                    this.items.push({
+                    let new_user = {
                         full_name:this.new_user.full_name,
                         username:this.new_user.username,
                         document_type:this.new_user.document_type,
                         document_number:this.new_user.document_number,
                         status:1,
-                    })
+                    }
+                    
+                    this.items.push(new_user);
 
                 }).catch((e)=>{
                     
@@ -347,27 +351,43 @@ export default {
             
         },
         updateUser(){
-            //Enviar datos de usuario al servidor
-            let status = 1;
-
-            if(status == 1){
-
-                this.snackbar.text = 'Usuario actualizado correctamente';
-                this.snackbar.text_color = 'green';
-
-            }else{
-
-                this.snackbar.text = '[Mostrar error de servidor]';
-                this.snackbar.text_color = 'red';
-
-            }
             
-            this.snackbar.is_displayed = true;
+            this.edit_user.status = this.edit_user.status ? 1 : 0;
+            this.axios.post('/edit_user',this.edit_user)
+            .then(()=>{
+
+                this.edit_user.status = this.edit_user.status == 1 ? 'activo' : 'inactivo';
+                this.items.splice(this.selected_item,1,this.edit_user);
+
+                console.log('361 Como queda items despues de actualizado:',this.items[this.selected_item]);
+                
+                this.snackbar.text = "Usuario modificado correctamente";
+                this.snackbar.text_color = "green";
+                this.dialog =false;
+
+            }).catch((e)=>{
+
+                console.log(e.response);
+                if(e.response.status == 422){
+                    let error_message = e.response.data.errors[Object.keys(e.response.data.errors)[0]][0];
+                    this.snackbar.text = error_message;
+                    this.snackbar.text_color = "red";
+                }
+
+            }).finally(()=>{
+
+                this.snackbar.is_displayed = true;
+
+            });
+
             
         },
         
-        editUser(user_clicked){
-            
+        editUser(user_clicked,item){
+            this.selected_item = item.index,
+
+            this.edit_user.id = user_clicked.id;
+
             this.edit_user.full_name = user_clicked.full_name;
             this.edit_user.username = user_clicked.username;
             this.edit_user.password = user_clicked.password;
@@ -375,6 +395,7 @@ export default {
             this.edit_user.document_number = user_clicked.document_number;
             this.edit_user.status = user_clicked.status;
             this.dialog = true;
+
         },
         pageUpdated(){
             alert('Se pulsó una flecha de la tabla');

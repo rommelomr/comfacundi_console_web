@@ -3,6 +3,7 @@ node_modules
 dist
 dist_deploy
 deploy.sh
+dist.tar.gz
 
 # local env files
 .env.local
