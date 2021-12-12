@@ -225,7 +225,6 @@
 import AddPhones from '../components/AddPhones.vue';
 import AddLinks from '../components/AddLinks.vue';
 import { mapGetters } from 'vuex';
-import Helper from '../utils/Helper.js';
 import SnackBar from '../components/SnackBar.vue';
 
 export default {
@@ -464,6 +463,7 @@ export default {
                     base64_image:this.covenant.new_image,
     
                 }).then((r)=>{
+                    console.log(r.data);
                     if(r.data == true){
                         this.snackbar.text = "Imagen guardada correctamente";
                         this.snackbar.text_color = "green";
@@ -750,12 +750,12 @@ export default {
                 this.covenant.enabled = r.data.data.status == 'e';
                 this.covenant.name = r.data.data.name;
                 
-                this.covenant.icon_url = r.data.data.icon == '' ? 'https://cdn.pixabay.com/photo/2016/01/03/00/43/upload-1118929_960_720.png' : Helper.SERVER_URL+r.data.data.icon; //ur;
+                this.covenant.icon_url = r.data.data.icon == '' ? 'https://cdn.pixabay.com/photo/2016/01/03/00/43/upload-1118929_960_720.png' : r.data.data.icon; //ur;
                 
-                //this.covenant.image_url = r.data.data.information == null ? 'https://cdn.pixabay.com/photo/2016/01/03/00/43/upload-1118929_960_720.png' : Helper.SERVER_URL+r.data.data.information.image, //ur;
+                //this.covenant.image_url = r.data.data.information == null ? 'https://cdn.pixabay.com/photo/2016/01/03/00/43/upload-1118929_960_720.png' : r.data.data.information.image, //ur;
 
                 if((r.data.data.information != null) && (r.data.data.information.image != '')){
-                    this.covenant.image_url = Helper.SERVER_URL+r.data.data.information.image;
+                    this.covenant.image_url = r.data.data.information.image;
                 }else{
                     this.covenant.image_url = 'https://cdn.pixabay.com/photo/2016/01/03/00/43/upload-1118929_960_720.png';
                 }
