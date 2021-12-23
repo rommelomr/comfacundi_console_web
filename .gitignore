@@ -4,6 +4,8 @@ dist
 dist_deploy
 deploy.sh
 dist.tar.gz
+build.sh
+doc/
 
 # local env files
 .env.local

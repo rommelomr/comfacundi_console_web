@@ -1,7 +1,7 @@
 <template>
     <v-container>
         <v-card>
-            <v-card-title>Agregar subconvenio a: {{parent_covenant}} <v-spacer></v-spacer> <v-btn text><v-icon>mdi-save</v-icon></v-btn></v-card-title>
+            <v-card-title>Agregar subservicio a: {{parent_covenant}} <v-spacer></v-spacer> <v-btn text><v-icon>mdi-save</v-icon></v-btn></v-card-title>
             <v-card-text>
                 <v-row>
                     <v-col cols="12" lg="4">
@@ -17,7 +17,7 @@
                             <v-card-text>
                                 <v-file-input
                                     outlined
-                                    label="Subir imagen al convenio"
+                                    label="Subir imagen al servicio"
                                     v-model="files.image"
                                 ></v-file-input>
                             </v-card-text>
@@ -25,7 +25,7 @@
                     </v-col>
                     <v-col cols="12" lg="8">
                         <v-card>
-                            <v-card-title class="justify-center">Información del convenio</v-card-title>
+                            <v-card-title class="justify-center">Información del servicio</v-card-title>
                             <v-divider></v-divider>
                             <v-card-text>
 
@@ -33,12 +33,12 @@
                                     <v-col cols="12">
                                         <v-text-field
                                             outlined
-                                            label="Nombre del convenio *"
+                                            label="Nombre del servicio (obligatorio)"
                                             v-model="covenant.name"
                                         ></v-text-field>
                                         <v-text-field
                                             outlined
-                                            label="Título * "
+                                            label="Título (Obligatorio) "
                                             v-model="covenant.title"
                                         ></v-text-field>
                                         
@@ -198,7 +198,7 @@
     </v-container>
 </template>
 <script>
-import { mapGetters } from 'vuex';
+import { mapGetters, mapMutations } from 'vuex';
 
 export default {
     name:'CreateCovenant',
@@ -222,24 +222,13 @@ export default {
 
         covenant:{
             parent_id:null,
-            //name:null,
-            name:'Nombre',
-            title:'Titulo',
-            
+            name:null,
+            title:null,
             icon:null,
-
-            //description:'',
-            description:'Descripción',
-
-            //image:null,
+            description:'',
             image:null,
-
-            //price:'',
-            price:'Desde $400',
-
-            //type_of_beneficiarie:null,
-            type_of_beneficiarie:'Valido para dos personas',
-
+            price:'',
+            type_of_beneficiarie:'',
         },
 
         new_link:{
@@ -276,6 +265,10 @@ export default {
 
         ...mapGetters([
             'getUserFromStore'
+        ]),
+        ...mapMutations([
+            'CLEAR_USER_DATA',
+            'CLEAR_COVENANTS',
         ]),
         //Bools
         phoneInputIsDisplayed(address_id){
@@ -463,6 +456,7 @@ export default {
 
             }).catch((e)=>{
                 console.log(e.response);
+                e.response.status == 401 ? this.logout():null
             });
 
         },
@@ -491,7 +485,7 @@ export default {
         validateInputs(){
             
             return this.covenant.name != null &&
-            this.covenant.parent_id != null
+            this.covenant.title != null
         },
         async saveNewCovenant(){
 
@@ -523,13 +517,15 @@ export default {
                     console.log(r.data);
                 }).catch((e)=>{
                     console.log(e.response);
+                    e.response.status == 401 ? this.logout():null
 
                 });
 
             }else{
 
                 this.snackbar.is_displayed = true;
-                this.snackbar.text = 'ERROR: Debe indicar al menos el nombre del convenio';
+                this.snackbar.text = 'ERROR: Debe indicar al menos el nombre y título del servicio';
+
             }
 
         },
@@ -553,6 +549,25 @@ export default {
             });
             
         },
+        logout(){
+          this.CLEAR_USER_DATA();
+            this.CLEAR_COVENANTS();
+
+            this.snackbar.text_color = 'red';
+            this.snackbar.text = 'Debe iniciar sesión para realizar esta acción';
+
+            this.snackbar.is_displayed = true;
+            
+            this.axios.get('/logout')
+            .then((r)=>{
+                console.log(r.data);
+
+            }).catch((e)=>{
+                console.log(e.response)
+            }).finally(()=>{
+                this.$router.push('/login');
+            });  
+        }
     },
 
 }

@@ -23,7 +23,8 @@ covenant_phones
     phone_number: varchar()
 
 covenant_tables
-(fk)covenant_id: 
+(fk)covenant_id:
+    name: varchar() 
     table: json
 
 covenant_links

@@ -67,10 +67,10 @@ import { mapGetters, mapMutations } from 'vuex';
         
         if(this.username != '' && this.password != ''){
 
-          this.snackbar.is_displayed = true;
           this.snackbar.text = 'cargando';
           this.snackbar.text_color = 'black';
           
+          this.snackbar.is_displayed = true;
 
           this.axios.post('/login',{
             username:this.username,

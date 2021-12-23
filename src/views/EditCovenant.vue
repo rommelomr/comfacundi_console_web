@@ -15,39 +15,64 @@
                 <v-row>
                     
                     <v-col cols="12">
-                        <v-card
-                            :loading="loading"
-                            class="mx-auto my-auto"   
-                        >
-                            <template slot="progress">
-                                <v-progress-linear
-                                    color="deep-purple"
-                                    height="10"
-                                    indeterminate
-                                ></v-progress-linear>
-                            </template>
-
-                            <v-card-title>
-
-                                <div v-if="!covenant.enabled">
-
-                                    {{covenant.name}} <label >(Inhabilitado)</label>
-                                    <v-btn text x-small class="green--text" @click="enableCovenant(covenant.id)">
-                                        Habilitar
-                                    </v-btn>
-                                </div>
-                                <div v-else>
-                                    {{covenant.name}} 
-                                    <v-btn text x-small class="red--text" @click="disableCovenant(covenant.id)">
-                                        Inhabilitar
-                                    </v-btn>
-                                </div>
+                        <v-card>
+                            <v-card-title class="d-block">
+                                <v-row class="pb-0">
+                                    <v-col cols="5">
+                                        <v-text-field
+                                            :append-icon="'mdi-content-save'"
+                                            @click:append="saveName"
+                                            v-model="covenant.name"
+                                        ></v-text-field>
+                                        <label v-if="!covenant.enabled" class="red--text subtitle-1">(Inhabilitado)</label>
+                                        <v-btn v-if="!covenant.enabled" text x-small class="green--text" @click="enableCovenant(covenant.id)">
+                                            Habilitar
+                                        </v-btn>
+                                        <v-btn v-else text x-small class="red--text" @click="disableCovenant(covenant.id)">
+                                            Inhabilitar
+                                        </v-btn>
+                                    </v-col>
+                                </v-row>
 
                             </v-card-title>
                         
                             <v-divider></v-divider>
 
                             <v-card-text>
+                                <p class="mt-2"><b>Subconvenios:</b></p>
+
+                                <v-chip
+                                    v-for="(subcovenant, i) in covenant.subcovenants"
+                                    :key="subcovenant+i"
+                                    class="mx-1 my-1"
+                                    @click="setCovenant(subcovenant.id)"
+                                >
+                                    {{subcovenant.name}}
+                                </v-chip>
+                                <div class="d-flex flex-row-reverse">
+
+                                    <v-btn color="green" text @click="$router.push('/convenios/agregar/'+covenant.id)">
+                                        <span class="d-none d-lg-block">Agregar subservicio</span>
+                                        <v-icon small class="d-block d-lg-none">mdi-plus-box</v-icon>
+                                    </v-btn>
+                                    
+                                </div>
+                                
+                                <v-divider></v-divider>  
+
+                                <p class="mt-2"><b>Título:</b></p>
+                                <v-row class="pb-0">
+                                    <v-col cols="5">
+                                        <v-text-field
+                                            :append-icon="'mdi-content-save'"
+                                            @click:append="saveTitle"
+                                            v-model="covenant.title"
+                                        ></v-text-field>
+                                    </v-col>
+                                </v-row>
+
+                                <v-divider></v-divider>
+
                                 <v-row class="py-4">
                                     
                                     <v-col cols="6" class="align-self-center">
@@ -135,28 +160,7 @@
                                         </v-col>
                                     </v-row>
 
-                                <v-divider></v-divider>
-
-                                <p class="mt-2"><b>Subconvenios:</b></p>
-
-                                <v-chip
-                                    v-for="(subcovenant, i) in covenant.subcovenants"
-                                    :key="subcovenant+i"
-                                    class="mx-1 my-1"
-                                    @click="setCovenant(subcovenant.id)"
-                                >
-                                    {{subcovenant.name}}
-                                </v-chip>
-                                <div class="d-flex flex-row-reverse">
-
-                                    <v-btn color="green" text @click="$router.push('/convenios/agregar/'+covenant.id)">
-                                        <span class="d-none d-lg-block">Agregar subconvenio</span>
-                                        <v-icon small class="d-block d-lg-none">mdi-plus-box</v-icon>
-                                    </v-btn>
-                                    
-                                </div>
-                                
-                                <v-divider></v-divider>                                                   
+                                <v-divider></v-divider>                                                 
                             
                                 <p class="mt-2"><b>Direcciones</b></p>
                                 <ul>
@@ -224,7 +228,7 @@
 
 import AddPhones from '../components/AddPhones.vue';
 import AddLinks from '../components/AddLinks.vue';
-import { mapGetters } from 'vuex';
+import { mapGetters, mapMutations } from 'vuex';
 import SnackBar from '../components/SnackBar.vue';
 
 export default {
@@ -252,6 +256,7 @@ export default {
             id:null,
             enabled:null,
             name:null,
+            title:null,
             icon_url:null,
             new_icon:null,
             image_url:null,
@@ -282,6 +287,47 @@ export default {
 
     },
     methods:{
+        ...mapMutations([
+        'CLEAR_USER_DATA',
+        'CLEAR_COVENANTS',
+        ]),
+        saveName(){
+            this.axios.post('/update_covenant_name',{
+                id: this.covenant.id,
+                name: this.covenant.name
+            })
+            .then( (r) => {
+                console.log(r)
+                this.snackbar.text = "Nombre modificado exitosamente"
+                this.snackbar.text_color = 'green';
+            }).catch( (e) => {
+                this.snackbar.text = "Ha ocurrido un error inesperado"
+                this.snackbar.text_color = 'red';
+                console.log(e.response)
+                e.response.status == 401 ? this.logout():null
+            }).finally( () => {
+                this.snackbar.is_displayed = true;
+            });
+        },
+        saveTitle(){
+            this.axios.post('/update_covenant_title',{
+                id: this.covenant.id,
+                title: this.covenant.title
+            })
+            .then( (r) => {
+                console.log(r)
+                this.snackbar.text = "Título modificado exitosamente"
+                this.snackbar.text_color = 'green';
+            }).catch( (e) => {
+                this.snackbar.text = "Ha ocu    rrido un error inesperado"
+                this.snackbar.text_color = 'red';
+                console.log(e.response)
+                e.response.status == 401 ? this.logout():null
+            }).finally( () => {
+                this.snackbar.is_displayed = true;
+            });
+        },
+        
         ...mapGetters([
             'getUserFromStore'
         ]),
@@ -308,6 +354,7 @@ export default {
                 this.snackbar.text = "Ha ocurrido un error inseperado";
                 this.snackbar.text_color = "red";
                 console.log(e.response);
+                e.response.status == 401 ? this.logout():null
                     
 
             }).finally(()=>{
@@ -331,6 +378,7 @@ export default {
                 this.snackbar.text_color = "red";
 
                 console.log(e.response);
+                e.response.status == 401 ? this.logout():null
 
             }).finally(()=>{
 
@@ -365,6 +413,7 @@ export default {
                 this.snackbar.text = "Ha ocurrido un error inseperado."
                 this.snackbar.text_color = "red";
                 console.log(e.response);
+                e.response.status == 401 ? this.logout():null
 
             }).finally(()=>{
 
@@ -388,10 +437,11 @@ export default {
                 this.snackbar.text_color = "green";
             }).catch((e)=>{
                 
-                console.log(e.response);
                 this.snackbar.text = "Ha ocurrido un error inesperado";
                 this.snackbar.text_color = "red";
 
+                console.log(e.response);
+                e.response.status == 401 ? this.logout():null
 
             }).finally(()=>{
                 this.snackbar.is_displayed = true;
@@ -422,6 +472,7 @@ export default {
                 this.snackbar.text_color = "red";
 
                 console.log(e.response)
+                e.response.status == 401 ? this.logout():null
             }).finally(()=>{
 
                 this.snackbar.is_displayed = true;
@@ -470,10 +521,11 @@ export default {
                     }
     
                 }).catch((e)=>{
-                    console.log(e.response);
                     this.snackbar.text = "La imagen no pudo ser guardada";
                     this.snackbar.text_color = "red";
                     
+                    console.log(e.response);
+                    e.response.status == 401 ? this.logout():null
     
                 }).finally(()=>{
                     this.snackbar.is_displayed = true;
@@ -499,10 +551,11 @@ export default {
                     }
                     
                 }).catch((e)=>{
-                    console.log(e.response);
                     this.snackbar.text_color = 'red';
                     this.snackbar.text = 'El ícono no pudo ser guardado';
 
+                    console.log(e.response);
+                    e.response.status == 401 ? this.logout():null
                 }).finally(()=>{
                     this.snackbar.is_displayed = true;
                 });
@@ -534,6 +587,7 @@ export default {
                 this.snackbar.text = "Ha ocurrido un error inesperado";
                 this.snackbar.text_color = "red";
                 console.log(e.response);
+                e.response.status == 401 ? this.logout():null
             });
 
         },
@@ -550,7 +604,8 @@ export default {
                 this.covenant.enabled = false;
                 
             }).catch((e)=>{
-
+                this.snackbar.text = 'Ha ocurrido un error inesperado';
+                this.snackbar.text_color = "red";
                 console.log(e.data)
 
             }).finally(()=>{
@@ -572,7 +627,8 @@ export default {
                 this.covenant.enabled = true;
                 
             }).catch((e)=>{
-
+                this.snackbar.text = 'Ha ocurrido un error inesperado';
+                this.snackbar.text_color = "red";
                 console.log(e.data)
 
             }).finally(()=>{
@@ -598,7 +654,10 @@ export default {
                     }
                     
                 }).catch((e)=>{
+                    this.snackbar.text = 'Ha ocurrido un error inesperado';
+                    this.snackbar.text_color = "red";
                     console.log(e.response);
+                    e.response.status == 401 ? this.logout():null
 
                 }).finally(()=>{
 
@@ -631,10 +690,10 @@ export default {
                     }
                 }).catch((e)=>{
 
-                    console.log(e.response);
-
                     this.snackbar.text_color = 'red';
                     this.snackbar.text = "Ocurrió un error al guardar el precio"
+                    console.log(e.response);
+                    e.response.status == 401 ? this.logout():null
 
                 }).finally(()=>{
 
@@ -749,6 +808,7 @@ export default {
                 this.covenant.id = r.data.data.id;
                 this.covenant.enabled = r.data.data.status == 'e';
                 this.covenant.name = r.data.data.name;
+                this.covenant.title = r.data.data.title;
                 
                 this.covenant.icon_url = r.data.data.icon == '' ? 'https://cdn.pixabay.com/photo/2016/01/03/00/43/upload-1118929_960_720.png' : r.data.data.icon; //ur;
                 
@@ -770,7 +830,10 @@ export default {
                 //this.covenant.phones = this.data.data.phones;
             })
             .catch((e)=>{
+                this.snackbar.text = 'Ha ocurrido un error inesperado y el convenio no se pudo cargar';
+                this.snackbar.text_color = "red";
                 console.log(e.response);
+                e.response.status == 401 ? this.logout():null
             })
             .finally(()=>{
                 window.scroll(0,0);
@@ -789,8 +852,26 @@ export default {
 
         required(field){
             return field != '' || 'Este campo no puede estar vacio'
-        },   
-        
+        },
+        logout(){
+            this.CLEAR_USER_DATA();
+            this.CLEAR_COVENANTS();
+
+            this.snackbar.text_color = 'red';
+            this.snackbar.text = 'Debe iniciar sesión para realizar esta acción';
+
+            this.snackbar.is_displayed = true;
+            
+            this.axios.get('/logout')
+            .then((r)=>{
+                console.log(r.data);
+
+            }).catch((e)=>{
+                console.log(e.response)
+            }).finally(()=>{
+                this.$router.push('/login');
+            });
+        }
     }
 
 

@@ -89,7 +89,7 @@
               <v-list-item-title class="dark-blue" >{{convenant.name}}</v-list-item-title>
             </v-list-item>
             <v-list-item @click="MenuItemClick('/convenios/inhabilitados')">
-              <v-list-item-title class="dark-blue">Convenios inhabilitados</v-list-item-title>
+              <v-list-item-title class="dark-blue">Servicios inhabilitados</v-list-item-title>
             </v-list-item>
 
             <v-divider></v-divider>
@@ -198,7 +198,7 @@ export default {
       }
     },
     logout(){
-      console.log();
+
       this.CLEAR_USER_DATA();
       this.CLEAR_COVENANTS();
 
