@@ -278,6 +278,15 @@ export default {
             return this.covenant.enabled ? 'inhabilitar':'habilitar';
         }
     },
+    watch: {
+        async '$route' () {
+                    
+            this.setCovenant(this.$route.params.id);
+            this.setTreeView();
+            this.setBreadCrumb();
+            this.$routeByRol(this.getUserFromStore());  
+        }
+    },
     mounted(){
         
         this.setCovenant(this.$route.params.id);
