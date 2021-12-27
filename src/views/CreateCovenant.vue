@@ -5,23 +5,43 @@
             <v-card-text>
                 <v-row>
                     <v-col cols="12" lg="4">
-                        <v-card>
-                            <v-card-title class="justify-center">Imagen del convenio</v-card-title>
-                            <v-divider></v-divider>
-                            <v-img
-                                :src="previewImage"
-                                width="300"
-                                class="mx-auto mt-2"
-                            >
-                            </v-img>
-                            <v-card-text>
-                                <v-file-input
-                                    outlined
-                                    label="Subir imagen al servicio"
-                                    v-model="files.image"
-                                ></v-file-input>
-                            </v-card-text>
-                        </v-card>    
+                        <v-row>
+                            <v-col cols="12">
+                                <v-card>
+                                    <v-card-title class="justify-center">Imagen del servicio</v-card-title>
+                                    <v-divider></v-divider>
+                                    <v-img
+                                        :src="previewImage"
+                                        width="300"
+                                        class="mx-auto mt-2"
+                                    >
+                                    </v-img>
+                                    <v-card-text>
+                                        <v-file-input
+                                            outlined
+                                            label="Subir imagen al servicio"
+                                            v-model="files.image"
+                                        ></v-file-input>
+                                    </v-card-text>
+                                </v-card>    
+                            </v-col>
+                        </v-row>
+                        <v-row>
+                            <v-col cols="12">
+                                <v-card>
+                                    <v-card-title class="justify-center">Tablas del servicio</v-card-title>
+                                    <v-divider></v-divider>
+                                    <v-card-text>
+                                        <v-file-input
+                                            multiple
+                                            outlined
+                                            label="Subir tablas del servicio"
+                                            v-model="files.tables"
+                                        ></v-file-input>
+                                    </v-card-text>
+                                </v-card>    
+                            </v-col>
+                        </v-row>
                     </v-col>
                     <v-col cols="12" lg="8">
                         <v-card>
@@ -59,7 +79,7 @@
                                         
                                         <v-file-input
                                             outlined
-                                            label="Ícono del convenio"
+                                            label="Ícono del servicio"
                                             v-model="files.icon"
                                         ></v-file-input>
                                         <v-textarea
@@ -217,7 +237,8 @@ export default {
 
         files:{
             icon:null,
-            image:null
+            image:null,
+            tables:[]
         },
 
         covenant:{
@@ -258,7 +279,7 @@ export default {
     },
     computed:{
         previewImage(){
-            return this.files.image == null ? 'https://cdn.pixabay.com/photo/2016/01/03/00/43/upload-1118929_960_720.png' : URL.createObjectURL(this.files.image)
+            return this.files.image == null ? 'https://cdn.pixabay.com/photo/2013/04/01/21/30/photo-99135_960_720.png' : URL.createObjectURL(this.files.image)
         }
     },
     methods:{
@@ -414,7 +435,6 @@ export default {
             this.new_address.name='';
             this.address_input_is_displayed=false;
         },
-
         //deletes
         deleteLink(link_id){
             
@@ -501,7 +521,16 @@ export default {
                     await this.setImageToBase64(this.files,'icon');
 
                 }
-                console.log(this.covenant);
+
+
+                if(this.files.tables != []){
+                    for(let i in this.files.tables){
+                        await this.setImageToBase64(this.files.tables,i,true);
+                    }
+                }
+                
+                
+                console.log(this.files.tables);
                 this.axios.post('/save_new_covenant',{
 
                     parent_id:this.covenant.parent_id,
@@ -511,14 +540,20 @@ export default {
                     price: this.covenant.price,
                     type_of_beneficiarie: this.covenant.type_of_beneficiarie,
                     image: this.files.image,
-                    icon: this.files.icon
+                    icon: this.files.icon,
+                    tables: this.files.tables
 
                 }).then((r)=>{
+                    
                     console.log(r.data);
+                    this.snackbar.text = 'Servicio agregado correctamente';
+                    this.snackbar.text_color = 'green';
+                    this.$router.push('/convenios/' + r.data.covenant_id);
                 }).catch((e)=>{
                     console.log(e.response);
                     e.response.status == 401 ? this.logout():null
-
+                }).finally(()=>{
+                    this.snackbar.is_displayed = true;
                 });
 
             }else{
@@ -529,8 +564,7 @@ export default {
             }
 
         },
-        setImageToBase64(file,prop){
-
+        setImageToBase64(file,prop,is_tables){
             return new Promise((resolve,reject)=>{
             
                 let reader = new FileReader();
@@ -538,7 +572,12 @@ export default {
     
                 reader.onload = () => {
 
-                    this.files[prop] = reader.result;
+                    if(is_tables != undefined){
+                        this.files.tables[prop] = reader.result;
+                    }else{
+
+                        this.files[prop] = reader.result;
+                    }
                     resolve();
                 };
 
@@ -561,7 +600,6 @@ export default {
             this.axios.get('/logout')
             .then((r)=>{
                 console.log(r.data);
-
             }).catch((e)=>{
                 console.log(e.response)
             }).finally(()=>{
